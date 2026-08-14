@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iterative Audio Separation with Mixture Consistency via MIMO Model Extension</title>
+  <meta name="description" content="A general framework for stable and effective iterative audio separation with mixture consistency by extending separation models to a multi-input multi-output (MIMO) configuration.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header>
+    <div class="container nav-content">
+      <a href="#" class="logo">
+        <i class="fa-solid fa-wave-square"></i>
+        MIMO Iterative Separation
+      </a>
+      <ul class="nav-links">
+        <li><a href="#concept">Concept</a></li>
+        <li><a href="#algorithm">Algorithm</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#code">Applying to Your Method</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge">
+        <span class="badge-dot"></span> Official PyTorch Implementation & Paper
+      </div>
+      <h1 class="hero-title">Iterative Audio Separation with Mixture Consistency<br>via MIMO Model Extension</h1>
+
+      <!-- Authors & Contact Info -->
+      <!-- Authors & Individual Social Links -->
+      <div class="hero-authors-container">
+        <div class="author-cards">
+          
+          <div class="author-card">
+            <div class="author-name">Yukara Ikemiya</div>
+            <div class="author-socials">
+              <a href="mailto:yukara.ikemiya@sony.com" class="author-icon-btn" title="Email: yukara.ikemiya@sony.com">
+                <i class="fa-solid fa-envelope"></i>
+              </a>
+              <a href="https://x.com/yukara_ikemiya" target="_blank" rel="noopener" class="author-icon-btn" title="X (Twitter): @yukara_ikemiya">
+                <i class="fa-brands fa-x-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="author-card">
+            <div class="author-name">Wei-Hsiang Liao</div>
+            <div class="author-socials">
+              <a href="mailto:weihsiang.liao@sony.com" class="author-icon-btn" title="Email: weihsiang.liao@sony.com">
+                <i class="fa-solid fa-envelope"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="author-card">
+            <div class="author-name">Yuhki Mitsufuji</div>
+            <div class="author-socials">
+              <a href="mailto:yuhki.mitsufuji@sony.com" class="author-icon-btn" title="Email: yuhki.mitsufuji@sony.com">
+                <i class="fa-solid fa-envelope"></i>
+              </a>
+              <a href="https://x.com/mittu1204" target="_blank" rel="noopener" class="author-icon-btn" title="X (Twitter)">
+                <i class="fa-brands fa-x-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+        </div>
+        
+        <div class="author-affiliation">Sony Group Corporation</div>
+      </div>
+
+      <p class="hero-subtitle">
+        A general, architecture-agnostic framework that turns any single-step audio separation model into an iterative refinement model while strictly preserving mixture consistency.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://arxiv.org/abs/dummy" target="_blank" rel="noopener" class="btn btn-primary">
+          <i class="fa-solid fa-file-pdf"></i> Read Paper (arXiv)
+        </a>
+        <a href="https://github.com/dummy" target="_blank" rel="noopener" class="btn btn-secondary">
+          <i class="fa-brands fa-github"></i> View GitHub Code
+        </a>
+        <a href="#code" class="btn btn-secondary">
+          <i class="fa-solid fa-code"></i> Quick Start
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: Concept -->
+  <section id="concept" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">01. Concept</span>
+        <h2 class="section-title">An Iterative Refinement Paradigm Across Arbitrary Methods</h2>
+      </div>
+
+      <div class="text-content">
+        <p>
+          In deep-learning-based audio source separation, conventional research has primarily focused on architectural design improvements (e.g., Conv-TasNet, Band-Split RNN, BS-RoFormer, SCNet). These models operate under single-step inference (single-input single-output or single-input multi-output configurations), where a single forward pass estimates target sources directly from the mixture input.
+        </p>
+      </div>
+
+      <!-- Figure 1: Method Concept -->
+      <div class="figure-container">
+        <img class="figure-image" src="fig/method_concept.png"
+             alt="Iterative refinement paradigm across arbitrary methods">
+        <p class="figure-caption">Iterative refinement paradigm across arbitrary methods.</p>
+      </div>
+
+      <div></div>
+        <p>
+          While architectural advancements have brought impressive gains, single-step inference leaves the power of progressive refinement untapped. Conversely, generative iterative models (such as diffusion-based methods) achieve high perceptual quality through multi-step sampling, but struggle to enforce strict mixture consistency—an essential constraint for high-fidelity audio stem separation.
+        </p>
+
+        <p>
+          <strong>The Core Concept of This Work:</strong>
+        </p>
+        <ul class="clean-list">
+          <li><strong>Architecture-Agnostic Framework:</strong> Instead of proposing yet another custom network backbone, we propose a general framework that converts <em>any</em> existing single-step separation model into an iterative refinement model.</li>
+          <li><strong>Mutual Refinement via MIMO:</strong> By extending the backbone to a Multi-Input Multi-Output (MIMO) configuration, the model receives all estimated source signals from the previous iteration step as inputs, enabling joint, mutual refinement across all target stems.</li>
+          <li><strong>Strict Mixture Consistency:</strong> Preserves exact mixture reconstruction ($\sum \hat{s}_k = x$) after every iteration step, stabilizing iterative prediction and maintaining phase and timbral fidelity.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 2: Algorithm -->
+  <section id="algorithm" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">02. Algorithm</span>
+        <h2 class="section-title">Algorithmic Explanation</h2>
+      </div>
+
+      <div class="text-content">
+        <p>
+          Naively feeding back a single output into a SISO/SIMO model causes error accumulation and over-separation because the model cannot correct errors across all stems simultaneously. Our MIMO framework resolves this through a simple, effective algorithm:
+        </p>
+
+        <ol class="clean-list">
+          <li>
+            <strong>Initial Input Setup (Iteration 0):</strong>
+            To satisfy mixture consistency from the outset, the input source estimates are initialized by dividing the input mixture equally among target stems: <code>s_k[0] = mixture / K</code>.
+          </li>
+          <li>
+            <strong>Joint MIMO Forward Pass (Iteration i):</strong>
+            At step <em>i</em>, all estimated source signals from step <em>i-1</em> are fed back into the MIMO model alongside an iteration step condition <em>i</em>. The model updates estimates by modeling inter-stem interactions and removing cross-stem leakage.
+          </li>
+          <li>
+            <strong>Mixture Consistency Projection:</strong>
+            After each iteration step <em>i</em>, a projection is applied so that the estimated stems sum back exactly to the original mixture:
+            <code>s_k[i] ← s_k[i] + (mixture - Σ s_j[i]) / K</code>.
+          </li>
+          <li>
+            <strong>Discriminator & Generative Extension (Optional):</strong>
+            Stem-wise discriminators enhance fine high-frequency details. Optionally, a zero-sum noise perturbation scheme enables stochastic generative refinement while maintaining strict mixture constraints.
+          </li>
+        </ol>
+      </div>
+
+      <!-- Figure 2: MIMO Model Extension -->
+      <div class="figure-container">
+        <img class="figure-image" src="fig/mimo_model_extension.png"
+             alt="Overview of the proposed MIMO iterative separation framework">
+        <p class="figure-caption">Overview of the proposed framework for iterative audio separation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Experiments -->
+  <section id="results" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">03. Experiments</span>
+        <h2 class="section-title">Experimental Results</h2>
+        <p class="section-desc">
+          Evaluated on the MUSDB18-HQ dataset across 2-stem and 4-stem separation tasks.
+        </p>
+      </div>
+
+      <!-- Table 1: BS-RoFormer -->
+      <div class="text-content">
+        <h3 class="subsection-title">1. Vocal-Accompaniment Separation (BS-RoFormer Backbone)</h3>
+        <p>
+          Applying our MIMO iterative framework to BS-RoFormer achieves consistent improvements of separation for both vocals and accompaniment over strong single-step baselines.
+        </p>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2">Model</th>
+              <th rowspan="2">Iter</th>
+              <th rowspan="2">Params</th>
+              <th colspan="3">Vocal</th>
+              <th colspan="3">Accompaniment</th>
+            </tr>
+            <tr>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>BS-RoFormer (Baseline)</td>
+              <td>N/A</td>
+              <td>72.2 M</td>
+              <td>11.92</td>
+              <td>21.75</td>
+              <td>13.04</td>
+              <td>24.54</td>
+              <td><u><strong>40.15</strong></u></td>
+              <td>25.47</td>
+            </tr>
+            <tr class="highlight-row">
+              <td><strong>MIMO BS-RoFormer</strong></td>
+              <td>3</td>
+              <td>71.4 M</td>
+              <td><u><strong>12.29</strong></u></td>
+              <td><u><strong>23.93</strong></u></td>
+              <td><u><strong>13.71</strong></u></td>
+              <td><u><strong>26.01</strong></u></td>
+              <td>39.85</td>
+              <td><u><strong>26.73</strong></u></td>
+            </tr>
+          </tbody>
+        </table>
+        <caption>Vocal-Accompaniment separation evaluation on MUSDB18-HQ.</caption>
+      </div>
+
+      <!-- Table 2: SCNet -->
+      <div class="text-content" style="margin-top: 36px;">
+        <h3 class="subsection-title">2. 4-Stem Separation (SCNet Backbone)</h3>
+        <p>
+          To demonstrate general applicability across architectures and stem counts, we evaluated 4-stem separation (vocals, bass, drums, other) using SCNet. The iterative MIMO SCNet outperforms single-step SCNet across all four stems simultaneously.
+        </p>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2">Model</th>
+              <th rowspan="2">Iter</th>
+              <th rowspan="2">Params</th>
+              <th colspan="3">Vocals</th>
+              <th colspan="3">Bass</th>
+              <th colspan="3">Drums</th>
+              <th colspan="3">Other</th>
+            </tr>
+            <tr>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+              <th>SDR</th>
+              <th>SIR</th>
+              <th>SAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SCNet (Baseline)</td>
+              <td>N/A</td>
+              <td>10.6 M</td>
+              <td>10.39</td>
+              <td>18.15</td>
+              <td>11.77</td>
+              <td>9.10</td>
+              <td>15.64</td>
+              <td>12.47</td>
+              <td>11.32</td>
+              <td>19.58</td>
+              <td>12.72</td>
+              <td>7.21</td>
+              <td>12.81</td>
+              <td>9.58</td>
+            </tr>
+            <tr class="highlight-row">
+              <td><strong>MIMO SCNet</strong></td>
+              <td>2</td>
+              <td>10.6 M</td>
+              <td><u><strong>10.57</strong></u></td>
+              <td><u><strong>18.62</strong></u></td>
+              <td><u><strong>11.92</strong></u></td>
+              <td><u><strong>9.80</strong></u></td>
+              <td><u><strong>16.98</strong></u></td>
+              <td><u><strong>13.65</strong></u></td>
+              <td><u><strong>11.73</strong></u></td>
+              <td><u><strong>20.39</strong></u></td>
+              <td><u><strong>12.94</strong></u></td>
+              <td><u><strong>7.63</strong></u></td>
+              <td><u><strong>13.61</strong></u></td>
+              <td><u><strong>9.75</strong></u></td>
+            </tr>
+          </tbody>
+        </table>
+        <caption>4-Stem separation (Vocals, Bass, Drums, Other) evaluation on MUSDB18-HQ.</caption>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Applying Framework -->
+  <section id="code" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">04. Implementation Guide</span>
+        <h2 class="section-title">Applying the MIMO Framework to Your Method</h2>
+        <p class="section-desc">
+          Because the proposed framework is general and architecture-agnostic, you can apply it to your custom source separation models by following these 3 steps:
+        </p>
+      </div>
+
+      <div class="text-content">
+        <ol class="clean-list">
+          <li>
+            <strong>Develop your base model:</strong>
+            Start with your standard PyTorch single-step source separation backbone (e.g., SISO or SIMO model architecture).
+          </li>
+          <li>
+            <strong>Extend the model architecture to MIMO:</strong>
+            Widen the input channel dimension to receive $K \times C$ multi-source audio tensors (where $K$ is the number of target stems and $C$ is audio channels), output $K$ stems (or $K \times K$ cross-stem spectral masks), and accept a time-step embedding input `t`. Additionally, if your model is spectral masking-based, you can adopt mask-weighted prediction for the MIMO extension by referring to Section 3.1 of the paper.
+          </li>
+          <li>
+            <strong>Wrap with <code>MIMOBase</code>:</strong>
+            Wrap your MIMO backbone using the provided <code>MIMOBase</code> class (`src/model/mimo_base.py`), which handles multi-step iterative refinement and mixture consistency projection during training and inference.
+          </li>
+        </ol>
+      </div>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <div class="code-tabs">
+            <button class="code-tab active" data-tab="step1-code">1. Develop Base Model</button>
+            <button class="code-tab" data-tab="step2-code">2. Extend to MIMO</button>
+            <button class="code-tab" data-tab="step3-code">3. Wrap with MIMOBase</button>
+          </div>
+          <button class="copy-btn"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
+
+        <!-- Code Block 1 -->
+        <div id="step1-code" class="code-block active">
+          <pre><code><span class="code-keyword">import</span> torch
+<span class="code-keyword">import</span> torch.nn <span class="code-keyword">as</span> nn
+
+<span class="code-comment"># Step 1: Develop your base separation backbone (SISO / SIMO)</span>
+<span class="code-keyword">class</span> <span class="code-class">MyBaseSeparator</span>(nn.Module):
+    <span class="code-keyword">def</span> <span class="code-func">__init__</span>(self, in_channels=<span class="code-num">2</span>, out_channels=<span class="code-num">2</span>):
+        <span class="code-keyword">super</span>().__init__()
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size=<span class="code-num">3</span>, padding=<span class="code-num">1</span>)
+        
+    <span class="code-keyword">def</span> <span class="code-func">forward</span>(self, x):
+        <span class="code-comment"># Single-step prediction: [B, C, T] -> [B, C, T]</span>
+        <span class="code-keyword">return</span> self.conv(x)</code></pre>
+        </div>
+
+        <!-- Code Block 2 -->
+        <div id="step2-code" class="code-block">
+          <pre><code><span class="code-keyword">import</span> torch
+<span class="code-keyword">import</span> torch.nn <span class="code-keyword">as</span> nn
+
+<span class="code-comment"># Step 2: Extend your model to a MIMO configuration with step conditioning</span>
+<span class="code-keyword">class</span> <span class="code-class">MyMIMOSeparator</span>(nn.Module):
+    <span class="code-keyword">def</span> <span class="code-func">__init__</span>(self, base_model, num_sources=<span class="code-num">2</span>, in_channels=<span class="code-num">2</span>):
+        <span class="code-keyword">super</span>().__init__()
+        self.num_sources = num_sources
+        self.in_channels = in_channels
+        
+        <span class="code-comment"># Input layer receives K * C channels (all estimated stems as multi-channel inputs)</span>
+        self.input_layer = nn.Conv1d(num_sources * in_channels, in_channels, kernel_size=<span class="code-num">1</span>)
+        self.base_model = base_model
+        
+        <span class="code-comment"># Time step condition embedding for iteration step i</span>
+        self.time_emb = nn.Embedding(num_embeddings=<span class="code-num">10</span>, embedding_dim=in_channels)
+
+    <span class="code-keyword">def</span> <span class="code-func">forward</span>(self, x, t=<span class="code-keyword">None</span>):
+        <span class="code-comment"># x: Multi-source input tensor [B, K, C, T]</span>
+        B, K, C, T = x.shape
+        x_flat = x.view(B, K * C, T)  <span class="code-comment"># Flatten stems along channel dimension</span>
+        
+        h = self.input_layer(x_flat)
+        <span class="code-keyword">if</span> t <span class="code-keyword">is not None</span>:
+            h = h + self.time_emb(t).unsqueeze(-<span class="code-num">1</span>)
+            
+        out = self.base_model(h)  <span class="code-comment"># Output tensor [B, K*C, T]</span>
+        <span class="code-keyword">return</span> out.view(B, K, C, T)  <span class="code-comment"># Reshape to [B, K, C, T]</span></code></pre>
+        </div>
+
+        <!-- Code Block 3 -->
+        <div id="step3-code" class="code-block">
+          <pre><code><span class="code-keyword">from</span> src.model.mimo_base <span class="code-keyword">import</span> MIMOBase
+
+<span class="code-comment"># Step 3: Wrap your MIMO backbone with MIMOBase</span>
+mimo_backbone = MyMIMOSeparator(base_model=MyBaseSeparator(), num_sources=<span class="code-num">2</span>, in_channels=<span class="code-num">2</span>)
+
+model = MIMOBase(
+    num_channels=<span class="code-num">2</span>,
+    num_sources=<span class="code-num">2</span>,
+    backbone_model=mimo_backbone,
+    max_iter=<span class="code-num">3</span>,                     <span class="code-comment"># Number of iterative refinement steps</span>
+    model_output_style=<span class="code-string">"direct"</span>,      <span class="code-comment"># "direct" or "diff"</span>
+    mixture_consistency=<span class="code-keyword">True</span>,         <span class="code-comment"># Enables mixture consistency projection</span>
+    use_time_emb=<span class="code-keyword">True</span>
+)
+
+<span class="code-comment"># The model automatically performs I-step iterative refinement</span>
+<span class="code-comment"># and enforces mixture consistency: sum(pred_stems) == mixture</span>
+outputs = model(x_multi_sources, t)</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        Iterative Audio Separation with Mixture Consistency via MIMO Model Extension
+      </p>
+      <p style="margin-top: 8px;">
+        Code licensed under MIT. Official Repository: <a href="https://github.com/yukara-sony/2025_iterative-separation" target="_blank" rel="noopener">2025_iterative-separation</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

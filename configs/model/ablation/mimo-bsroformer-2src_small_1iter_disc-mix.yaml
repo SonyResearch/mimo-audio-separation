@@ -1,0 +1,85 @@
+# BS-RoFormer backbone (medium size) for 2-source separation
+# ???M parameters
+
+_target_: model.MIMOBase
+
+num_channels: 2
+num_sources: 2
+max_iter: 1
+model_output_style: "direct" # "diff" or "direct"
+use_time_emb: false
+
+# training config
+input_normalize: true  # normalize input mixture for training stability
+training_config:
+  iter_weights: null
+  iter_loss_weights: null
+  checkpoint_from_iter: 1  # from which iteration to enable gradient checkpointing
+
+discriminator:
+  _target_: model.discriminator.CombDiscriminator
+  gradient_checkpointing: false
+
+  D:
+    mrd_mix:
+      _target_: model.discriminator.MixingMRD
+      fft_sizes: [2048]
+      num_channels: ${model.num_channels}
+      num_sources: ${model.num_sources}
+      hidden_dim: 32
+      hop_factor: 0.25
+      num_feat_layers: 4
+
+  loss_lambdas:
+    mrd_mix: 1.0
+
+backbone_model:
+  _target_: model.backbone.MultiSourceBSRoformer
+  gradient_checkpointing: false # true
+
+  n_src: ${..num_sources}
+  use_time_embed: ${..use_time_emb}
+  tanh_mask: true
+  
+  # BS-RoFormer parameters
+  dim: 192
+  audio_channels: 4 # 2 ch x 2 src
+  depth: 4
+  time_transformer_depth: 1
+  freq_transformer_depth: 1
+  heads: 8
+  dim_head: 24  # 192 / 8 (?)
+  attn_dropout: 0.1
+  ff_dropout: 0.1
+  flash_attn: true
+
+  mask_estimator_depth: 2
+  mask_estimator_mult: 1
+
+  # disable hyper-connection
+  num_residual_streams: 1
+
+
+loss_modules:
+  wave: 
+    _target_: model.loss.WaveLoss
+    loss_type: "L1"
+    decibel: false
+
+  snr:
+    _target_: model.loss.SNRLoss
+    
+  spec: 
+    _target_: model.loss.MRSTFTLoss
+    n_ffts: [4096, 2048, 1024, 512, 256]
+    hop_sizes: [147, 147, 147, 147, 147]
+    decibel_mae: false
+
+
+loss_lambdas:
+  # setting of BSMamba2 paper
+  l1_wave: 2.0
+  mrstft/l1: 1.0
+  # GAN losses
+  mrd_mix/disc_gan_loss: 0.01
+  mrd_mix/disc_feat_loss: 0.0

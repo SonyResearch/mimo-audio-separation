@@ -1,0 +1,90 @@
+# SCNeT backbone (small size) for 4-source separation
+# 10.6M parameters
+
+_target_: model.MIMOBase
+
+num_channels: 2
+num_sources: 4
+max_iter: 2
+model_output_style: "direct" # "diff" or "direct"
+use_time_emb: true
+
+# training config
+input_normalize: true  # normalize input mixture for training stability
+training_config:
+  iter_weights: [0, 1]
+  iter_loss_weights: [1, 2]  # loss weights for each iteration during training
+  checkpoint_from_iter: 1  # from which iteration to enable gradient checkpointing
+
+discriminator:
+  _target_: model.discriminator.CombDiscriminator
+  gradient_checkpointing: false
+
+  D:
+    mrd_stem:
+      _target_: model.discriminator.StemMRD
+      fft_sizes: [2048]
+      num_channels: ${model.num_channels}
+      num_sources: ${model.num_sources}
+      hidden_dim: 16
+      hop_factor: 0.25
+      num_feat_layers: 4
+
+  loss_lambdas:
+    mrd_stem: 1.0
+
+
+backbone_model:
+  _target_: model.backbone.MultiSourceSCNet
+  gradient_checkpointing: false # true
+
+  n_src: ${..num_sources}
+  audio_channels: ${..num_channels}
+
+  multi_src_input: true
+  use_time_embed: ${..use_time_emb}
+  dim_time_emb: 256
+
+  dims: [16, 32, 64, 128]
+  nfft: 4096
+  hop_size: 1024
+  win_size: 4096
+  normalized: True
+  band_SR: [0.175, 0.392, 0.433]
+  band_stride: [1, 4, 16]
+  band_kernel: [3, 4, 16]
+  conv_depths: [3, 2, 1]
+  compress: 4
+  conv_kernel: 3
+  num_dplayer: 6
+  expand: 1
+
+
+loss_modules:
+  wave: 
+    _target_: model.loss.WaveLoss
+    loss_type: "L1"
+    decibel: false
+
+  snr:
+    _target_: model.loss.SNRLoss
+
+  spec:
+    _target_: model.loss.MRSTFT_RMSELoss
+    n_ffts: [4096]
+    hop_sizes: [1024]
+    
+  # spec: 
+  #   _target_: model.loss.MRSTFTLoss
+  #   n_ffts: [4096]
+  #   hop_sizes: [1024]
+  #   decibel_mae: false
+
+
+loss_lambdas:
+  # Loss from SCNet paper
+  l1_wave: 0.0
+  mrstft/rmse: 1.0
+  # GAN losses
+  mrd_stem/disc_gan_loss: 0.01
+  mrd_stem/disc_feat_loss: 0.0

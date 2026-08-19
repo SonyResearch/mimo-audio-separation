@@ -1,0 +1,15 @@
+defaults:
+  - model: bsroformer-2src_base_71M
+  - data: musdb18_src-2_sec-8
+  - optimizer: separator_and_disc
+  - trainer: default
+  - _self_
+
+# no hydra logging
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+  # multirun
+  sweep:
+    dir: .

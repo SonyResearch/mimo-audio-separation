@@ -1,0 +1,21 @@
+train:
+  _target_: data.AudioDataset
+  sample_rate: 44100
+  sample_length: 352800 # 8 sec
+  out_channels: 'stereo'
+  audio_modules:
+    musdb18:
+      root_dirs: []
+      metadata_name: 'metadata'
+      inst_list: ['vocals', 'bass', 'drums', 'other']
+      gather_list: [[0], [1, 2, 3]]
+      ext: 'wav'
+      random_shift: true
+      aug_mix: true
+      aug_volume: true
+      aug_flip: true
+      aug_ch_shuffle: true
+      aug_silence: true
+      ensure_non_silent: true
+
+      

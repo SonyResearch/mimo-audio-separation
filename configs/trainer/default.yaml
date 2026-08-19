@@ -1,0 +1,57 @@
+# Root directory for outputs
+output_dir: ???
+
+# Checkpoint directory for resuming training
+ckpt_dir: null
+
+# Finetuning from a pre-trained model
+# If true, the optimizer and scheduler states are not loaded.
+finetuning: false
+
+# Batch size
+# NOTE: Batch size must be a multiple of GPU number
+batch_size: 1
+num_workers: 2
+
+# Seed value used for rng initialization
+seed: 0
+
+# debug
+debug: false
+
+# Automatic mixed precision
+# Choose from ‘no’,‘fp16’,‘bf16’ or ‘fp8’.
+amp: 'bf16' # 'fp16' # 'no'
+
+# Max norm of gradient clipping
+max_grad_norm: 1.0
+
+# EMA (Exponential Moving Average)
+ema:
+  beta: 0.999
+  update_after_step: 5000
+  update_every: 10
+  include_online_model: false  # only save the EMA model, not the online model
+
+# Logging
+
+logger:
+  project_name: 'project_name'
+  run_name: 'run_name'
+
+logging:
+  # Step interval for logging metrics / saving checkpoints
+  # / generating samples / test (validation) / printing metrics
+  n_step_log: 10
+  n_step_metrics: 2000
+  n_step_ckpt: 2000
+  n_step_sample: 5000
+  n_step_val: 5000
+  n_step_print: 100
+  # Valication
+  n_samples_val: 30
+  # Number of generated samples
+  n_samples_per_step: 3
+  steps: [1]
+
+  metrics_for_best_ckpt: ['G/n-snr']

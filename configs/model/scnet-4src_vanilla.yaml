@@ -1,0 +1,52 @@
+# SCNeT (small) for 4-source separation
+# 10.58M parameters
+
+_target_: model.SIMOBase
+
+num_channels: 2
+num_sources: 4
+input_normalize: true  # normalize input mixture for training stability
+
+mixture_consistency: true
+
+backbone_model:
+  _target_: model.backbone.SCNet
+  gradient_checkpointing: false # true
+
+  n_src: ${..num_sources}
+  audio_channels: ${..num_channels}
+
+  dims: [4, 32, 64, 128]
+  nfft: 4096
+  hop_size: 1024
+  win_size: 4096
+  normalized: True
+  band_SR: [0.175, 0.392, 0.433]
+  band_stride: [1, 4, 16]
+  band_kernel: [3, 4, 16]
+  conv_depths: [3, 2, 1]
+  compress: 4
+  conv_kernel: 3
+  num_dplayer: 6
+  expand: 1
+
+
+loss_modules:
+  wave: 
+    _target_: model.loss.WaveLoss
+    loss_type: "L1"
+    decibel: false
+
+  snr:
+    _target_: model.loss.SNRLoss
+
+  spec:
+    _target_: model.loss.MRSTFT_RMSELoss
+    n_ffts: [4096]
+    hop_sizes: [1024]
+
+
+loss_lambdas:
+  # Loss from SCNet paper
+  l1_wave: 0.0
+  mrstft/rmse: 1.0

@@ -1,0 +1,42 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.5.0-cuda12.1-cudnn9-devel
+
+%post
+    set -eux
+
+    apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        libsndfile1 ffmpeg git espeak-ng \
+    && rm -rf /var/lib/apt/lists/*
+
+    python -m pip install -U --no-cache-dir pip wheel
+    pip install -U --no-cache-dir setuptools==81.0.0
+
+    # torchaudio / torchcodec
+    python -m pip install -U --no-cache-dir \
+        torchaudio==2.5.* \
+        "torchcodec==0.1.*" \
+        pysoundfile==0.9.0 \
+        librosa julius \
+        museval
+
+    python -m pip install -U --no-cache-dir einops rotary_embedding_torch hyper_connections beartype \
+         hydra-core wandb accelerate ema-pytorch
+    
+
+    # check versions
+    python - <<'PY'
+import torch
+import torchaudio
+print("torch     :", torch.__version__)
+print("torchaudio:", torchaudio.__version__)
+try:
+    import torchcodec
+    print("torchcodec:", torchcodec.__version__)
+except Exception as e:
+    print("torchcodec import failed:", e)
+PY
+
+%environment
+    export PATH=/usr/local/bin:$PATH
+    export PYTHONUNBUFFERED=1

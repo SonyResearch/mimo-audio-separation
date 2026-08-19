@@ -36,22 +36,23 @@ For more details on the evaluation methodology used in the paper, please refer t
 #### **Small models (from ablation study) :**
 | Model Variant | Params | Input length | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
 | --- | --- | :---: | :---: | :---: | :---: | :---: |
-| BS-RoFormer <br> *(variant-1)* | 12.1 M | 4 sec | 96 | 1,000,000 | 9.64 / 16.80 | [HuggingFace (Dummy)](#) |
-| **MIMO BS-RoFormer** <br> *(variant-8)* | 16.3 M | 4 sec | 96 | 1,000,000 | 10.17 / 17.64 | [HuggingFace (Dummy)](#) |
+| BS-RoFormer <br> *(variant-1)* | 12.1 M | 4 sec | 96 | 1,000,000 | 9.64 / 16.80 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/bsroformer_small.zip) |
+| **MIMO BS-RoFormer** <br> *(variant-8)* | 16.3 M | 4 sec | 96 | 1,000,000 | 10.17 / 17.64 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/mimo-bsroformer_3iter_small.zip) |
 
 #### **Large models (from vocal-accompaniment separation experiment) :**
 | Model Variant | Params | Input length | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
 | --- | --- | :---: | :---: | :---: | :---: | :---: |
-| BS-RoFormer | 72.2 M | 8 sec | 96 | 1,000,000 | 11.40 / 18.48 | [HuggingFace (Dummy)](#) |
-| **MIMO BS-RoFormer** | 71.4 M | 8 sec | 96 | 1,000,000 | 11.62 / 19.04 | [HuggingFace (Dummy)](#) |
+| BS-RoFormer | 72.2 M | 8 sec | 96 | 1,000,000 | 11.40 / 18.48 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/bsroformer_large.zip) |
+| **MIMO BS-RoFormer** | 71.4 M | 8 sec | 96 | 1,000,000 | 11.62 / 19.04 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/mimo-bsroformer_3iter_large.zip) |
 
 ### 2. SCNet Variants (4-Source: Vocals, Bass, Drums & Other)
 
 #### **Small models (from 4-stem separation experiment) :**
-| Model Variant | Params | Input length | Batch Size | Training Steps | musevalSDR <br> (Vocals / Bass / Drums / Other) | Download |
+| Model Variant | Params | Input length | Batch Size | Training Steps | museval SDR <br> (Vocals / Bass / Drums / Other) | Download |
 | --- | --- | :---: | :---: | :---: | :---: | :---: |
-| SCNet | 10.6 M | 11 sec | 48 | 1,500,000 | 9.71 / 9.65 / 10.61 / 7.26 | [HuggingFace (Dummy)](#) |
-| **MIMO SCNet** | 10.6 M | 11 sec | 48 | 1,500,000 | 9.82 / 10.46 / 10.93 / 7.69 | [HuggingFace (Dummy)](#) |
+| SCNet | 10.6 M | 11 sec | 48 | 1,500,000 | 9.71 / 9.65 / 10.61 / 7.26 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/scnet_small.zip) |
+| **MIMO SCNet** | 10.6 M | 11 sec | 48 | 1,500,000 | 9.82 / 10.46 / 10.93 / 7.69 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/mimo-scnet_small.zip) |
+| **MIMO SCNet (gen)** | 10.6 M | 11 sec | 48 | 1,500,000 | 9.88 / 10.17 / 10.81 / 7.61 | [Download](https://github.com/SonyResearch/mimo-audio-separation/releases/download/v1.0.0/mimo-scnet-gen_small.zip) |
 
 *\* Note: Parameter counts exclude discriminator weights.*
 

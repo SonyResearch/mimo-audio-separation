@@ -4,11 +4,11 @@
 [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-blue.svg)](https://arxiv.org/abs/XXXX.XXXXX)
 
 
-This is the official PyTorch implementation for "[**Iterative Audio Separation with Mixture Consistency via MIMO Model Extension**](https://arxiv.org/abs/XXXX.XXXXX)" [1].
+This is the official PyTorch implementation for "[**Iterative Audio Separation with Mixture Consistency via MIMO Model Extension**](https://arxiv.org/abs/XXXX.XXXXX)".
 
 ![MIMO](./assets/fig/mimo_model_extension.png)
 
-It supports state-of-the-art music source separation backbones including **BS-RoFormer** [2], **Mel-RoFormer** [3], and **SCNet** [4] using scalable [Hydra](https://hydra.cc/) configurations and PyTorch Distributed Data Parallel (DDP) via [Accelerate](https://huggingface.co/docs/accelerate/).
+It supports state-of-the-art music source separation backbones including **BS-RoFormer** [1], **Mel-RoFormer** [2], and **SCNet** [3] using scalable [Hydra](https://hydra.cc/) configurations and PyTorch Distributed Data Parallel (DDP) via [Accelerate](https://huggingface.co/docs/accelerate/).
 
 ---
 
@@ -16,8 +16,7 @@ It supports state-of-the-art music source separation backbones including **BS-Ro
 
 - 🎵 **Flexible Model Backbones**: BS-RoFormer [1], Mel-RoFormer [2], SCNet [3], and custom MIMO architectures.
 - 🚀 **Scalable Distributed Training**: DDP multi-GPU / multi-node training powered by PyTorch Accelerate & Hydra.
-- ⚡ **Optimized Data Pipeline**: Pre-indexed metadata caching (`metadata.csv`) for near-instant dataset initialization.
-- 📦 **Clean Model Deployment**: Utility tool (`src/unwrap_model.py`) to extract EMA weights and minimal configs for inference.
+- 📦 **Pretrained Checkpoints**: Download and use pretrained model weights.
 - 📊 **Evaluation Pipeline**: Seamless integration with `museval` and BSSEval metrics for full-track or sliding-window evaluation.
 
 ---
@@ -26,7 +25,8 @@ It supports state-of-the-art music source separation backbones including **BS-Ro
 
 Pre-trained model weights used in the paper can be downloaded below.
 
-Note that all of the models are trained on the MUSDB18-HQ train dataset (44.1 kHz, 16-bit, stereo),
+### Dataset & Evaluation Note
+All the models are trained on the MUSDB18-HQ train dataset (44.1 kHz, 16-bit, stereo),
 and SDR values listed below are evaluated on the MUSDB18-HQ test set using the `museval` library (median-of-medians),
 so they may differ from the values reported in the paper.
 For more details on the evaluation methodology used in the paper, please refer to Section 4.1.2.
@@ -34,24 +34,24 @@ For more details on the evaluation methodology used in the paper, please refer t
 ### 1. BS-RoFormer Variants (2-Source: Vocals & Accompaniment)
 
 #### **Small models (from ablation study) :**
-| Model Variant | Params | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
-| --- | --- | :---: | :---: | :---: | :---: |
-| BS-RoFormer <br> *(variant-1)* | 12.1 M | 96 | 1,000,000 | 9.64 / 16.80 | [HuggingFace (Dummy)](#) |
-| **MIMO BS-RoFormer** <br> *(variant-8)* | 16.3 M | 96 | 1,000,000 | 10.17 / 17.64 | [HuggingFace (Dummy)](#) |
+| Model Variant | Params | Input length | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| BS-RoFormer <br> *(variant-1)* | 12.1 M | 4 sec | 96 | 1,000,000 | 9.64 / 16.80 | [HuggingFace (Dummy)](#) |
+| **MIMO BS-RoFormer** <br> *(variant-8)* | 16.3 M | 4 sec | 96 | 1,000,000 | 10.17 / 17.64 | [HuggingFace (Dummy)](#) |
 
-#### **Large models (from vocal/accompaniment separation experiment) :**
-| Model Variant | Params | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
-| --- | --- | :---: | :---: | :---: | :---: |
-| BS-RoFormer | 72.2 M | 96 | 1,000,000 | 11.40 / 18.48 | [HuggingFace (Dummy)](#) |
-| **MIMO BS-RoFormer** | 71.4 M | 96 | 1,000,000 | 11.62 / 19.04 | [HuggingFace (Dummy)](#) |
+#### **Large models (from vocal-accompaniment separation experiment) :**
+| Model Variant | Params | Input length | Batch Size | Training Steps | museval SDR<br> (Vocals / Accomp) | Download |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| BS-RoFormer | 72.2 M | 8 sec | 96 | 1,000,000 | 11.40 / 18.48 | [HuggingFace (Dummy)](#) |
+| **MIMO BS-RoFormer** | 71.4 M | 8 sec | 96 | 1,000,000 | 11.62 / 19.04 | [HuggingFace (Dummy)](#) |
 
 ### 2. SCNet Variants (4-Source: Vocals, Bass, Drums & Other)
 
 #### **Small models (from 4-stem separation experiment) :**
-| Model Variant | Params | Batch Size | Training Steps | musevalSDR <br> (Vocal / Bass / Drums / Other) | Download |
-| --- | --- | :---: | :---: | :---: | :---: |
-| SCNet | 10.6 M | 48 | 1,500,000 | 9.71 / 9.65 / 10.61 / 7.26 | [HuggingFace (Dummy)](#) |
-| **MIMO SCNet** | 10.6 M | 48 | 1,500,000 | 9.82 / 10.46 / 10.93 / 7.69 | [HuggingFace (Dummy)](#) |
+| Model Variant | Params | Input length | Batch Size | Training Steps | musevalSDR <br> (Vocals / Bass / Drums / Other) | Download |
+| --- | --- | :---: | :---: | :---: | :---: | :---: |
+| SCNet | 10.6 M | 11 sec | 48 | 1,500,000 | 9.71 / 9.65 / 10.61 / 7.26 | [HuggingFace (Dummy)](#) |
+| **MIMO SCNet** | 10.6 M | 11 sec | 48 | 1,500,000 | 9.82 / 10.46 / 10.93 / 7.69 | [HuggingFace (Dummy)](#) |
 
 *\* Note: Parameter counts exclude discriminator weights.*
 
@@ -169,7 +169,12 @@ python src/evaluate.py \
 Run source separation on arbitrary mixture audio files using a trained or unwrapped checkpoint (`src/inference.py`):
 
 ```bash
-python src/inference.py     --ckpt-dir /path/to/unwrapped_models/exp001     --input-audio-dir /path/to/mixtures     --output-dir /path/to/output_stems     --stem-names vocals drums bass other     --iterations 3
+python src/inference.py \
+    --ckpt-dir /path/to/unwrapped_models/exp001 \
+    --input-audio-dir /path/to/mixtures \
+    --output-dir /path/to/output_stems \
+    --stem-names vocals accomp \
+    --iterations 3
 ```
 
 *For full CLI options and multi-iteration output configuration, see [docs/inference.md](docs/inference.md).*
@@ -244,10 +249,22 @@ outputs = model(x_multi_sources, t)
 
 ---
 
+## Citing
+
+```bibtex
+@misc{ikemiya2026mimo,
+      title={Iterative Audio Separation with Mixture Consistency via {MIMO} Model Extension}, 
+      author={Yukara Ikemiya and WeiHsiang Liao and Yuki Mitsufuji},
+      year={2026},
+      eprint={XXXX.XXXXX},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS}
+}
+```
+
 ## 📚 References
 
-1. **Iterative Audio Separation with Mixture Consistency via MIMO Model Extension**: Y. Ikemiya, W. Liao, and Y. Mitsufuji, *arXiv:XXXXX*, 2026.
-2. **BS-RoFormer**: "Music Source Separation with Band-Split RoPE Transformer", W.-T. Lu et al., *arXiv:2309.02612*, 2023.
-3. **Mel-RoFormer**: "Mel-Band RoFormer for Music Source Separation", J.-C. Wang et al., *arXiv:2310.01809*, 2023.
-4. **SCNet**: "SCNet: Sparse Compression Network for Music Source Separation", W. Tong et al., *arXiv:2401.13276*, 2024.
+1. **BS-RoFormer**: "Music Source Separation with Band-Split RoPE Transformer", W.-T. Lu et al., *arXiv:2309.02612*, 2023.
+1. **Mel-RoFormer**: "Mel-Band RoFormer for Music Source Separation", J.-C. Wang et al., *arXiv:2310.01809*, 2023.
+1. **SCNet**: "SCNet: Sparse Compression Network for Music Source Separation", W. Tong et al., *arXiv:2401.13276*, 2024.
 

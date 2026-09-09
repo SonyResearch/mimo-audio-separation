@@ -1,12 +1,13 @@
 # Iterative Audio Separation with Mixture Consistency via MIMO Model Extension
 
-[![Project page](https://img.shields.io/badge/Project_Page-XXXX-red)](https://github.com/XXXX)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-blue.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+[![Project page](https://img.shields.io/badge/Project_Page-Summary-red)](https://sonyresearch.github.io/mimo-audio-separation/)
+[![arXiv](https://img.shields.io/badge/arXiv-2609.07226-blue.svg)](https://arxiv.org/abs/2609.07226)
 
 
-This is the official PyTorch implementation for "[**Iterative Audio Separation with Mixture Consistency via MIMO Model Extension**](https://arxiv.org/abs/XXXX.XXXXX)".
+This is the official PyTorch implementation for "[**Iterative Audio Separation with Mixture Consistency via MIMO Model Extension**](https://arxiv.org/abs/2609.07226)",
+which proposes a general framework to convert any single-step audio separation model into an iterative separation process with mixture consistency property.
 
-![MIMO](./assets/fig/mimo_model_extension.png)
+![MIMO](./assets/fig/mimo_iterative_separation.png)
 
 It supports state-of-the-art music source separation backbones including **BS-RoFormer** [1], **Mel-RoFormer** [2], and **SCNet** [3] using scalable [Hydra](https://hydra.cc/) configurations and PyTorch Distributed Data Parallel (DDP) via [Accelerate](https://huggingface.co/docs/accelerate/).
 
@@ -15,7 +16,7 @@ It supports state-of-the-art music source separation backbones including **BS-Ro
 ## 🔥 Features
 
 - 🎵 **Flexible Model Backbones**: BS-RoFormer [1], Mel-RoFormer [2], SCNet [3], and custom MIMO architectures.
-- 🚀 **Scalable Distributed Training**: DDP multi-GPU / multi-node training powered by PyTorch Accelerate & Hydra.
+- 🚀 **Scalable Distributed Training**: DDP multi-GPU / multi-node training powered by Huggingface Accelerate & Hydra.
 - 📦 **Pretrained Checkpoints**: Download and use pretrained model weights.
 - 📊 **Evaluation Pipeline**: Seamless integration with `museval` and BSSEval metrics for full-track or sliding-window evaluation.
 
@@ -254,10 +255,10 @@ outputs = model(x_multi_sources, t)
 
 ```bibtex
 @misc{ikemiya2026mimo,
-      title={Iterative Audio Separation with Mixture Consistency via {MIMO} Model Extension}, 
+      title={Iterative Audio Separation with Mixture Consistency via {MIMO} Model Extension},
       author={Yukara Ikemiya and WeiHsiang Liao and Yuki Mitsufuji},
       year={2026},
-      eprint={XXXX.XXXXX},
+      eprint={2609.07226},
       archivePrefix={arXiv},
       primaryClass={eess.AS}
 }

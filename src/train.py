@@ -76,7 +76,7 @@ def main(cfg: DictConfig):
 
     print(f"->->-> Rank: {get_rank()} / World size: {get_world_size()}")
 
-    set_seed(cfg.trainer.seed)
+    set_seed(cfg.trainer.seed + get_rank())
 
     # Dataset
 

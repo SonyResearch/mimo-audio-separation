@@ -341,7 +341,6 @@ def main():
     evals = {
         "bss_eval": BSSEval().to(device),
         "spec_eval": SpecEval().to(device),
-        # "bleedfull_eval": BleedFull(sr=sample_rate, n_fft=4096, hop_length=1024, n_mels=512).to(device)
         "silent_eval": SilentSegmentEval().to(device),
     }
 

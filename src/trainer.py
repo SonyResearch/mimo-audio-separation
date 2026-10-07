@@ -3,14 +3,16 @@ Copyright (C) 2025 Yukara Ikemiya
 """
 
 import os
+import typing as tp
 
 import torch
+import torch.distributed as dist
 import wandb
 import gc
 
 from utils.logging import MetricsLogger
 from utils.torch_common import exists, sort_dict, print_once
-from evaluate import separate, BSSEval, SpecEval, BleedFull
+from evaluate import separate, BSSEval, SpecEval
 
 
 class Trainer:
@@ -57,7 +59,6 @@ class Trainer:
         self.evals = {
             "bss_eval": BSSEval().to(self.device),
             "spec_eval": SpecEval().to(self.device)
-            # "bleedfull_eval": BleedFull(sr=self.sr, n_fft=4096, hop_length=1024, n_mels=512).to(self.device)
         }
 
         # time measurement
@@ -82,19 +83,18 @@ class Trainer:
                 # Update
                 metrics = self.run_step(batch)
 
+                self.logger.add(metrics)
+                self.logger_metrics.add(metrics)
+                self.logger_print.add(metrics)
+
+                # Log / Print -- must run on ALL ranks since metrics are reduced across ranks
+                if self.__its_time(self.cfg_t.logging.n_step_log):
+                    self.__log_metrics()
+
+                if self.__its_time(self.cfg_t.logging.n_step_print):
+                    self.__print_metrics()
+
                 if self.accel.is_main_process:
-                    self.logger.add(metrics)
-                    self.logger_metrics.add(metrics)
-                    self.logger_print.add(metrics)
-
-                    # Log
-                    if self.__its_time(self.cfg_t.logging.n_step_log):
-                        self.__log_metrics()
-
-                    # Print
-                    if self.__its_time(self.cfg_t.logging.n_step_print):
-                        self.__print_metrics()
-
                     # Save checkpoint
                     if self.__its_time(self.cfg_t.logging.n_step_ckpt):
                         self.__save_ckpt()
@@ -127,36 +127,95 @@ class Trainer:
         output = self.model.train_step(sources)
 
         if train:
-            # if torch.isnan(output['G/loss']) or torch.isinf(output['G/loss']):
-            #     print(f"Warning: NaN or Inf detected in generator loss at step {self.states['global_step']}. Skipping update.")
-            #     return {k: v.detach() for k, v in output.items()}
-
             # Separator update
+            params_g = self._optimizer_params(self.opt)
             self.accel.backward(output['G/loss'])
+            self._all_reduce_grads(params_g)
             if self.accel.sync_gradients:
-                self.accel.clip_grad_norm_(self.model.parameters(), self.cfg_t.max_grad_norm)
+                self.accel.clip_grad_norm_(params_g, self.cfg_t.max_grad_norm)
 
             self.opt.step()
             self.sche.step()
 
             # Discriminator update
             if self.have_disc:
-                # if torch.isnan(output['D/loss']) or torch.isinf(output['D/loss']):
-                #     print(f"Warning: NaN or Inf detected in discriminator loss at step {self.states['global_step']}. Skipping discriminator update.")
-                #     return {k: v.detach() for k, v in output.items()}
-
+                params_d = self._optimizer_params(self.opt_d)
+                # Drop the grads that G/loss (GAN / feature-matching) left on the discriminator.
+                self.opt_d.zero_grad()
                 self.accel.backward(output['D/loss'])
+                self._all_reduce_grads(params_d)
                 if self.accel.sync_gradients:
-                    self.accel.clip_grad_norm_(self.model.discriminator.parameters(), self.cfg_t.max_grad_norm)
+                    self.accel.clip_grad_norm_(params_d, self.cfg_t.max_grad_norm)
 
                 self.opt_d.step()
                 self.sche_d.step()
 
-                # EMA
+            # EMA
             if exists(self.ema):
                 self.ema.update()
 
         return {k: v.detach() for k, v in output.items()}
+
+    @staticmethod
+    def _optimizer_params(opt) -> tp.List[torch.nn.Parameter]:
+        return [p for group in opt.param_groups for p in group['params']]
+
+    @torch.no_grad()
+    def _all_reduce_grads(self, params: tp.List[torch.nn.Parameter], bucket_numel: int = 2 ** 25):
+        """Average .grad over ranks; needed because train_step runs on the unwrapped model, bypassing DDP's reducer."""
+        world_size = self.accel.num_processes
+        if world_size == 1:
+            return
+
+        params = [p for p in params if p.requires_grad]
+        # As in DDP, params unused on every rank keep grad=None; params unused only on some ranks get zeros.
+        has_grad = torch.tensor([p.grad is not None for p in params], dtype=torch.uint8, device=self.device)
+        dist.all_reduce(has_grad, op=dist.ReduceOp.MAX)
+        grads = []
+        for p, used in zip(params, has_grad.tolist()):
+            if used:
+                if p.grad is None:
+                    p.grad = torch.zeros_like(p)
+                grads.append(p.grad)
+
+        buckets_by_dtype: tp.Dict[torch.dtype, tp.List[tp.List[torch.Tensor]]] = {}
+        for g in grads:
+            buckets = buckets_by_dtype.setdefault(g.dtype, [[]])
+            if buckets[-1] and sum(x.numel() for x in buckets[-1]) + g.numel() > bucket_numel:
+                buckets.append([])
+            buckets[-1].append(g)
+
+        for buckets in buckets_by_dtype.values():
+            for bucket in buckets:
+                flat = torch._utils._flatten_dense_tensors(bucket)
+                dist.all_reduce(flat)
+                flat.div_(world_size)
+                for g, synced in zip(bucket, torch._utils._unflatten_dense_tensors(flat, bucket)):
+                    g.copy_(synced)
+
+    @torch.no_grad()
+    def _pop_reduced(self, logger: MetricsLogger) -> tp.Dict[str, torch.Tensor]:
+        """Pop metrics averaged over logged steps and all ranks. Must be called on ALL ranks."""
+        counts = dict(logger.counts)
+        sums = logger.pop(mean=False)
+        if self.accel.num_processes == 1:
+            return {k: v / counts[k] for k, v in sums.items()}
+
+        # Key sets can differ across ranks (e.g. randomly sampled number of iterations)
+        all_keys = [None] * self.accel.num_processes
+        dist.all_gather_object(all_keys, sorted(sums.keys()))
+        keys = sorted(set().union(*all_keys))
+        if len(keys) == 0:
+            return {}
+
+        zero = torch.zeros((), device=self.device)
+        local_sums = torch.stack([sums[k].float().to(self.device) if k in sums else zero for k in keys])
+        local_cnts = torch.tensor([float(counts.get(k, 0)) for k in keys], device=self.device)
+        buf = torch.cat([local_sums, local_cnts])
+        dist.all_reduce(buf)
+        g_sums, g_cnts = buf.split(len(keys))
+
+        return {k: g_sums[i] / g_cnts[i].clamp(min=1.0) for i, k in enumerate(keys)}
 
     @torch.no_grad()
     def __sampling(self):
@@ -380,7 +439,7 @@ class Trainer:
                 self.ema.init_ema()
 
     def __log_metrics(self, sort_by_key: bool = True):
-        metrics = self.logger.pop()
+        metrics = self._pop_reduced(self.logger)
         # learning rate
         metrics['G/lr'] = self.sche.get_last_lr()[0]
         if sort_by_key:
@@ -390,7 +449,7 @@ class Trainer:
 
         # update states
         if self.logger_metrics.cnt >= self.cfg_t.logging.n_step_metrics:
-            metrics = self.logger_metrics.pop()
+            metrics = self._pop_reduced(self.logger_metrics)
             m_for_ckpt = self.cfg_t.logging.metrics_for_best_ckpt
             m_latest = float(sum([metrics[k].detach() for k in m_for_ckpt]))
             self.states['latest_metrics'] = m_latest
@@ -402,7 +461,7 @@ class Trainer:
         torch.cuda.synchronize()
         p_time = self.s_event.elapsed_time(self.e_event) / 1000.  # [sec]
 
-        metrics = self.logger_print.pop()
+        metrics = self._pop_reduced(self.logger_print)
         # tensor to scalar
         metrics = {k: v.item() for k, v in metrics.items()}
         if sort_by_key:
@@ -410,7 +469,8 @@ class Trainer:
 
         step = self.states['global_step']
         s = f"Step {step} ({p_time:.1e} [sec]): " + ' / '.join([f"[{k}] - {v:.3e}" for k, v in metrics.items()])
-        print(s)
+        if self.accel.is_main_process:
+            print(s)
 
         self.s_event.record()
 

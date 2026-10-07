@@ -17,7 +17,7 @@ import julius
 from einops import rearrange
 
 from utils.torch_common import print_once
-from eval import BSSEval, SpecEval, BleedFull, SilentSegmentEval
+from eval import BSSEval, SpecEval, SilentSegmentEval
 from evaluate import make_audio_batch, cross_fade, make_silent_segment_to_zero
 
 sys.dont_write_bytecode = True
@@ -65,7 +65,6 @@ def main():
     evals = {
         "bss_eval": BSSEval().to(device),
         "spec_eval": SpecEval().to(device),
-        # "bleedfull_eval": BleedFull(sr=sr, n_fft=4096, hop_length=1024, n_mels=512).to(device),
         "silent_eval": SilentSegmentEval().to(device),
     }
 

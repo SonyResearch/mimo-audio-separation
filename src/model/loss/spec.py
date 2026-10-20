@@ -2,6 +2,7 @@
 Copyright (C) 2024 Yukara Ikemiya
 """
 
+import math
 import typing as tp
 
 import torch
@@ -164,10 +165,11 @@ class MRSTFT_RMSELoss(nn.Module):
             spec_x = rearrange(spec_x, '(B n_src n_ch) F T c -> B n_src n_ch F T c', B=B, n_src=n_src, n_ch=n_ch)
             spec_y = rearrange(spec_y, '(B n_src n_ch) F T c -> B n_src n_ch F T c', B=B, n_src=n_src, n_ch=n_ch)
 
-            loss = F.mse_loss(spec_x, spec_y, reduction='none')
+            diff = (spec_x - spec_y).flatten(start_dim=2)
 
-            # RMSE
-            loss = (loss.mean(dim=(2, 3, 4, 5)).sqrt() + self.eps).mean(dim=(0, 1))
+            # Equivalent RMSE with a finite zero subgradient at exact matches.
+            loss = (torch.linalg.vector_norm(diff, dim=-1) /
+                    math.sqrt(diff.shape[-1]) + self.eps).mean(dim=(0, 1))
 
             losses['mrstft/rmse'] += loss
 
